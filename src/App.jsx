@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { supabase } from './config/supabase'
 import Header from './components/Header'
 import About from './components/About'
 import LeaderCarousel from './components/LeaderCarousel'
@@ -9,10 +10,50 @@ import EventCard from './components/EventCard'
 import StudentDashboard from './components/StudentDashboard'
 import AdminDashboard from './components/AdminDashboard'
 import SRCDashboard from './components/SRCDashboard'
+import SFCDashboard from './components/SFCDashboard'
+import ISRCDashboard from './components/ISRCDashboard'
+import ISPDashboard from './components/ISPDashboard'
+import CSRCDashboard from './components/CSRCDashboard'
+import CSPDashboard from './components/CSPDashboard'
 
 function AppContent() {
-  const { user } = useAuth()
+  const authContext = useAuth()
+  const { user } = authContext
   const [currentPage, setCurrentPage] = useState('home')
+  const [news, setNews] = useState([])
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch news and events from database
+  useEffect(() => {
+    const fetchNewsAndEvents = async () => {
+      try {
+        const { data: newsData, error: newsError } = await supabase
+          .from('news')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(3)
+
+        const { data: eventsData, error: eventsError } = await supabase
+          .from('events')
+          .select('*')
+          .order('event_date', { ascending: true })
+          .limit(3)
+
+        if (newsError) throw newsError
+        if (eventsError) throw eventsError
+
+        setNews(newsData || [])
+        setEvents(eventsData || [])
+      } catch (error) {
+        console.error('Error fetching news and events:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchNewsAndEvents()
+  }, [])
 
   // Show dashboard based on user role
   if (user) {
@@ -21,7 +62,12 @@ function AppContent() {
         <Header onNavigate={setCurrentPage} currentPage={currentPage} />
         {user.role === 'student' && <StudentDashboard />}
         {user.role === 'admin' && <AdminDashboard />}
-        {user.role === 'src' && <SRCDashboard />}
+        {user.role === 'src' && <SRCDashboard user={user} />}
+        {user.role === 'sfc' && <SFCDashboard user={user} />}
+        {user.role === 'isrc' && <ISRCDashboard user={user} />}
+        {user.role === 'isp' && <ISPDashboard user={user} />}
+        {user.role === 'csrc' && <CSRCDashboard user={user} />}
+        {user.role === 'csp' && <CSPDashboard user={user} />}
       </div>
     )
   }
@@ -101,24 +147,25 @@ function AppContent() {
                 <a href="#all-news" className="view-all">All News</a>
               </div>
               <div className="news-grid">
-                <NewsCard 
-                  title="New Student Leadership Council Elected for 2026"
-                  description="TUT community votes in fresh student governance representatives committed to addressing campus concerns and improving student life through transparent decision-making processes."
-                  date="8 February 2026"
-                  image="https://picsum.photos/400/250?random=10"
-                />
-                <NewsCard 
-                  title="Student Governance Forum Launches Mental Health Initiative"
-                  description="SGLD introduces comprehensive mental health support program in collaboration with student services, featuring peer support groups and awareness campaigns across all faculties."
-                  date="6 February 2026"
-                  image="https://picsum.photos/400/250?random=11"
-                />
-                <NewsCard 
-                  title="Campus Sustainability Project Gains Student Support"
-                  description="Student governance representatives champion green initiatives, with plans to reduce campus carbon footprint and implement recycling programs through collaborative leadership."
-                  date="4 February 2026"
-                  image="https://picsum.photos/400/250?random=12"
-                />
+                {loading ? (
+                  <p>Loading news...</p>
+                ) : news.length > 0 ? (
+                  news.map((item) => (
+                    <NewsCard 
+                      key={item.id}
+                      title={item.title}
+                      description={item.description}
+                      date={new Date(item.created_at).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                      image={item.image_url}
+                    />
+                  ))
+                ) : (
+                  <p>No news available</p>
+                )}
               </div>
             </div>
 
@@ -128,27 +175,28 @@ function AppContent() {
                 <a href="#all-events" className="view-all">All Events</a>
               </div>
               <div className="events-list">
-                <EventCard 
-                  dateNum="12"
-                  month="Feb"
-                  title="Student Leadership Development Workshop"
-                  location="Main Campus Auditorium"
-                  time="14:00"
-                />
-                <EventCard 
-                  dateNum="13"
-                  month="Feb"
-                  title="SGLD General Assembly Meeting"
-                  location="Student Centre, Room 201"
-                  time="11:30"
-                />
-                <EventCard 
-                  dateNum="15"
-                  month="Feb"
-                  title="Governance & Advocacy Training Session"
-                  location="Hybrid Event"
-                  time="10:00"
-                />
+                {loading ? (
+                  <p>Loading events...</p>
+                ) : events.length > 0 ? (
+                  events.map((item) => {
+                    const eventDate = new Date(item.event_date)
+                    const day = eventDate.getDate()
+                    const month = eventDate.toLocaleDateString('en-US', { month: 'short' })
+                    const time = item.event_time ? item.event_time.substring(0, 5) : ''
+                    return (
+                      <EventCard 
+                        key={item.id}
+                        dateNum={day}
+                        month={month}
+                        title={item.title}
+                        location={item.location}
+                        time={time}
+                      />
+                    )
+                  })
+                ) : (
+                  <p>No events available</p>
+                )}
               </div>
             </div>
           </div>

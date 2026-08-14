@@ -330,8 +330,8 @@ MODIFIED FILES:
 Edit CSS variables in `src/styles.css`:
 ```css
 :root {
-  --accent: #0f766e;    /* Primary color */
-  --accent-600: #115e59; /* Darker accent */
+  --accent: #C41E3A;    /* Primary TUT Red */
+  --accent-600: #A01830; /* Darker TUT Red */
   --bg: #ffffff;         /* Background */
 }
 ```

@@ -8,10 +8,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.103.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "terser": "^5.46.1",
     "vite": "5.0.0"
   }
 }

@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './Dashboards.css'
+import SRCCommunications from './SRCCommunications'
+import { communicationService } from '../services/apiService'
 
-export default function SRCDashboard() {
+export default function SRCDashboard({ user }) {
   const [meetings, setMeetings] = useState([
     { id: 1, title: 'Weekly SRC Meeting', date: '2026-03-20', time: '14:00', location: 'Board Room', status: 'scheduled', attendees: 12 },
     { id: 2, title: 'Campus Planning Committee', date: '2026-03-22', time: '10:30', location: 'Virtual', status: 'scheduled', attendees: 8 },
@@ -19,6 +21,19 @@ export default function SRCDashboard() {
   const [newMeeting, setNewMeeting] = useState({ title: '', date: '', time: '', location: '' })
   const [newUpdate, setNewUpdate] = useState({ title: '', content: '' })
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Load unread message count on mount
+  useEffect(() => {
+    loadUnreadCount()
+  }, [user])
+
+  const loadUnreadCount = async () => {
+    if (user?.id) {
+      const count = await communicationService.getSRCUnreadCount(user.id)
+      setUnreadCount(count)
+    }
+  }
 
   const handleCreateMeeting = (e) => {
     e.preventDefault()
@@ -85,6 +100,12 @@ export default function SRCDashboard() {
           onClick={() => setActiveTab('updates')}
         >
           Updates
+        </button>
+        <button 
+          className={`tab ${activeTab === 'communications' ? 'active' : ''}`}
+          onClick={() => setActiveTab('communications')}
+        >
+          📱 Communications {unreadCount > 0 && <span style={{ background: '#dc2626', color: 'white', borderRadius: '50%', padding: '0 6px', marginLeft: '4px' }}>{unreadCount}</span>}
         </button>
       </div>
 
@@ -359,6 +380,20 @@ export default function SRCDashboard() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Communications Tab */}
+      {activeTab === 'communications' && (
+        <div className="dashboard-grid full-width">
+          <div className="dashboard-card full-width">
+            <div className="card-header">
+              <h2>💬 Admin Communications</h2>
+            </div>
+            <div className="card-body">
+              {user ? <SRCCommunications user={user} /> : <p>Please log in to access communications</p>}
             </div>
           </div>
         </div>
